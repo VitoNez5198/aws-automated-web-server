@@ -70,7 +70,7 @@ systemctl start httpd
 systemctl enable httpd
 
 # Crear una página web personalizada de prueba
-echo "<html><body><h1>¡Despliegue automatizado exitoso!</h1><p>El equipo de la Sta
+echo "<html><head><meta charset='UTF-8'></head><body style='font-family:sans-serif; text-align:center; padding-top:50px;'><h1>¡Despliegue automatizado exitoso!</h1><p>El equipo de la Startup ya no tiene que instalar ni configurar Apache manualmente.</p></body></html>" > /var/www/html/index.html
 ```
 ## 🧪 Pruebas y Validación
 
@@ -94,7 +94,6 @@ desde la consola de AWS.
   **3. Configuración y Rutas de la Route Table:**
   ![Route Table Rules 1](docs/images/screenshots/03-route-table-rules.1.png)
   ![Route Table Rules 2](docs/images/screenshots/03-route-table-rules.2.png)
-  ![Route Table Rules 3](docs/images/screenshots/03-route-table-rules.3.png)
 
   **4. Reglas de Entrada (Inbound Rules) del Security Group:**
   ![Security Group Inbound Rules 1](docs/images/screenshots/04-security-group-inbound.1.png)
