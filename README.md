@@ -1,1 +1,88 @@
-# aws-automated-web-server
+Automated Web Server Provisioning on AWS VPC
+
+Este repositorio contiene la documentación técnica y el script de automatización para diseñar una infraestructura de red segura en Amazon Web Services (AWS) y aprovisionar de forma autónoma un servidor web Apache sobre una instancia Amazon Linux 2023.
+
+El objetivo principal de este proyecto es eliminar las tareas repetitivas de instalación manual mediante scripts de inicialización (User Data), demostrando habilidades en redes, seguridad cloud y administración de sistemas Linux.
+
+🗺️ Arquitectura del Proyecto
+
+El siguiente diagrama ilustra el flujo de tráfico desde el usuario final hasta la instancia EC2, detallando las capas de red (VPC, Subred Pública), enrutamiento (Internet Gateway, Route Table) y seguridad (Security Group como cortafuegos perimetral):
+
+Diseñado en Lucidchart utilizando la biblioteca oficial de iconos de arquitectura de AWS (2026).
+
+🎯 Objetivos de Aprendizaje
+
+Diseño de Redes en AWS: Creación de una VPC personalizada, subred pública aislada y tablas de ruteo conectadas a un Internet Gateway.
+
+Seguridad Perimetral: Configuración de un Security Group actuando como firewall a nivel de instancia, permitiendo únicamente tráfico entrante en puertos HTTP (80) y SSH (22).
+
+Automatización del Aprovisionamiento (Bootstrapping): Uso de scripts de Bash en la fase de inicialización de instancias EC2 para la automatización completa del despliegue del servidor web.
+
+🔧 Guía de Despliegue Paso a Paso
+
+1. Infraestructura de Red (VPC)
+
+Creación de VPC: Crear una VPC con bloque CIDR 10.0.0.0/16 (nombre: Startup-VPC).
+
+Gateway de Internet: Crear un Internet Gateway (Startup-IGW) y asociarlo a la VPC.
+
+Subred Pública: Crear una subred con el bloque CIDR 10.0.1.0/24 (nombre: Startup-Subnet-Publica).
+
+Tabla de Ruteo: Agregar una ruta en la Route Table local que apunte todo el tráfico saliente (0.0.0.0/0) hacia el Startup-IGW.
+
+2. Seguridad (Security Group)
+
+Crear un Grupo de Seguridad llamado Web-Server-SG asociado a Startup-VPC.
+
+Configurar las siguientes reglas de entrada (Inbound Rules):
+
+HTTP (Puerto 80): Desde cualquier origen (0.0.0.0/0).
+
+SSH (Puerto 22): Para administración segura (recomienda restringir a tu IP pública).
+
+3. Lanzamiento de Instancia EC2 & Bootstrapping
+
+Lanzar una instancia EC2 de tipo t2.micro (o t3.micro) con la AMI oficial de Amazon Linux 2023.
+
+Vincularla a la Startup-Subnet-Publica y habilitar la autoasignación de IP pública.
+
+En la sección Advanced Details > User Data, ingresar el siguiente script de automatización:
+
+#!/bin/bash
+# Actualizar los paquetes del sistema
+dnf update -y
+
+# Instalar el servidor web Apache
+dnf install -y httpd
+
+# Iniciar el servicio del servidor web
+systemctl start httpd
+
+# Habilitar el servidor para que inicie si la máquina se reinicia
+systemctl enable httpd
+
+# Crear una página web personalizada de prueba
+echo "<html><body><h1>¡Despliegue automatizado exitoso!</h1><p>El equipo de la Startup ya no tiene que instalar esto manualmente.</p></body></html>" > /var/www/html/index.html
+
+
+🧪 Pruebas y Validación
+
+Una vez que la instancia EC2 se encuentre en estado Running, copie su dirección IPv4 pública desde la consola de AWS.
+
+Abra una pestaña en su navegador e ingrese a http://<IP_PUBLICA>.
+
+Deberá ver la página web HTML generada automáticamente por el script Bash de User Data.
+
+🚀 Habilidades Demostradas
+
+AWS Cloud Infrastructure: Uso de consola, VPC, direccionamiento CIDR, Internet Gateways y tablas de enrutamiento.
+
+Administración de Servidores Linux: Actualización de paquetería, gestión de servicios del sistema operativo (systemd) mediante Bash.
+
+Seguridad Cloud: Implementación de principios de mínimo privilegio mediante Security Groups y segmentación de red.
+
+Automatización / DevOps: Conceptos iniciales de aprovisionamiento ágil e infraestructura automatizada.
+
+📚 Programa AWS re/Start & Generation Chile
+
+Este proyecto forma parte de mi portafolio de aprendizaje durante el bootcamp intensivo AWS re/Start dictado por Generation Chile, diseñado para adquirir habilidades técnicas clave en soporte, administración de sistemas y conceptos cloud de Amazon Web Services.
