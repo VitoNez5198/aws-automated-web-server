@@ -80,6 +80,34 @@ desde la consola de AWS.
 2. Abra una pestaña en su navegador e ingrese a http://<IP_PUBLICA>.
 3. Deberá ver la página web HTML generada automáticamente por el script Bash de User Data.
 
+## 📸 Evidencia de Configuración
+
+<details>
+  <summary>📸 Ver evidencia de configuración en consola (Clic para expandir)</summary>
+
+  **1. Asociación de Internet Gateway (IGW):**
+  ![Internet Gateway Attachment](docs/images/screenshots/01-igw-attachment.png)
+
+  **2. Creación y Configuración de la Subred Pública:**
+  ![Public Subnet](docs/images/screenshots/02-public-subnet.png)
+
+  **3. Configuración y Rutas de la Route Table:**
+  ![Route Table Rules 1](docs/images/screenshots/03-route-table-rules.1.png)
+  ![Route Table Rules 2](docs/images/screenshots/03-route-table-rules.2.png)
+  ![Route Table Rules 3](docs/images/screenshots/03-route-table-rules.3.png)
+
+  **4. Reglas de Entrada (Inbound Rules) del Security Group:**
+  ![Security Group Inbound Rules 1](docs/images/screenshots/04-security-group-inbound.1.png)
+  ![Security Group Inbound Rules 2](docs/images/screenshots/04-security-group-inbound.2.png)
+
+  **5. Instancia EC2 en Ejecución con IP Pública:**
+  ![EC2 Running IP](docs/images/screenshots/05-ec2-running-ip.png)
+
+  **6. Confirmación de Servidor Apache Activo:**
+  ![Apache Success](docs/images/screenshots/06-apache-deployment-success.png)
+
+</details>
+
 ## 🚀 Habilidades Demostradas
 
 
