@@ -14,6 +14,8 @@ El siguiente diagrama ilustra el flujo de tráfico desde el usuario final hasta 
 las capas de red (VPC, Subred Pública), enrutamiento (Internet Gateway, Route Table) y seguridad
 (Security Group como cortafuegos perimetral):
 
+![Diagrama de Arquitectura AWS](docs/images/architecture.png)
+
 _Diseñado en Lucidchart utilizando la biblioteca oficial de iconos de arquitectura de AWS (2026)._
 
 ## 🎯 Objetivos de Aprendizaje
