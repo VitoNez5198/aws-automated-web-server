@@ -92,12 +92,10 @@ desde la consola de AWS.
   ![Public Subnet](docs/images/screenshots/02-public-subnet.png)
 
   **3. Configuración y Rutas de la Route Table:**
-  ![Route Table Rules 1](docs/images/screenshots/03-route-table-rules.1.png)
-  ![Route Table Rules 2](docs/images/screenshots/03-route-table-rules.2.png)
+  ![Route Table Rules](docs/images/screenshots/03-route-table-rules.2.png)
 
   **4. Reglas de Entrada (Inbound Rules) del Security Group:**
-  ![Security Group Inbound Rules 1](docs/images/screenshots/04-security-group-inbound.1.png)
-  ![Security Group Inbound Rules 2](docs/images/screenshots/04-security-group-inbound.2.png)
+  ![Security Group Inbound Rules](docs/images/screenshots/04-security-group-inbound.2.png)
 
   **5. Instancia EC2 en Ejecución con IP Pública:**
   ![EC2 Running IP](docs/images/screenshots/05-ec2-running-ip.png)
