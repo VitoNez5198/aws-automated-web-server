@@ -1,126 +1,109 @@
 # Automated Web Server Provisioning on AWS VPC
 
-Este repositorio contiene la documentación técnica y el script de automatización para diseñar una
-infraestructura de red segura en Amazon Web Services (AWS) y aprovisionar de forma autónoma un
-servidor web Apache sobre una instancia Amazon Linux 2023.
+[![AWS VPC](https://img.shields.io/badge/AWS-VPC%20%2B%20EC2-orange?logo=amazon-aws)](https://aws.amazon.com/vpc/)
+[![Amazon Linux 2023](https://img.shields.io/badge/OS-Amazon%20Linux%202023-232F3E?logo=linux&logoColor=white)](https://aws.amazon.com/linux/amazon-linux-2023/)
+[![Bash](https://img.shields.io/badge/Bootstrapping-Bash%20User%20Data-4EAA25?logo=gnu-bash&logoColor=white)](scripts/user-data.sh)
 
-El objetivo principal de este proyecto es eliminar las tareas repetitivas de instalación manual
-mediante scripts de inicialización ( _User Data_ ), demostrando habilidades en redes, seguridad cloud y
-administración de sistemas Linux.
+> Diseño de una red aislada en **Amazon VPC** (`10.0.0.0/16`) con subred pública, enrutamiento vía **Internet Gateway**, firewall perimetral con **Security Groups** y aprovisionamiento desatendido de **Apache (`httpd`)** sobre **Amazon Linux 2023** mediante **EC2 User Data**.
 
-## 🗺 Arquitectura del Proyecto
+---
 
-El siguiente diagrama ilustra el flujo de tráfico desde el usuario final hasta la instancia EC2, detallando
-las capas de red (VPC, Subred Pública), enrutamiento (Internet Gateway, Route Table) y seguridad
-(Security Group como cortafuegos perimetral):
+## Contexto y Problema
 
-![Diagrama de Arquitectura AWS](docs/images/architecture.png)
+Configurar servidores web manualmente por SSH introduce errores repetitivos, deriva de configuración y lentitud al recrear instancias. Este laboratorio (desarrollado como parte del programa **AWS Cloud re/Start — Generation Chile**) construye desde cero una topología VPC controlada y automatiza la instalación y arranque del servicio web en el primer inicio de la instancia.
 
-_Diseñado en Lucidchart utilizando la biblioteca oficial de iconos de arquitectura de AWS (2026)._
+---
 
-## 🎯 Objetivos de Aprendizaje
+## Arquitectura del Sistema
 
-1. __Diseño de Redes en AWS:__ Creación de una VPC personalizada, subred pública aislada y tablas
-de ruteo conectadas a un Internet Gateway.
-2. __Seguridad Perimetral:__ Configuración de un Security Group actuando como firewall a nivel de
-instancia, permitiendo únicamente tráfico entrante en puertos HTTP (80) y SSH (22).
-3. __Automatización del Aprovisionamiento (Bootstrapping):__ Uso de scripts de Bash en la fase de
-inicialización de instancias EC2 para la automatización completa del despliegue del servidor
-web.
+Topología de red y flujo de aprovisionamiento implementados en `Startup-VPC`:
 
-## 🔧 Guía de Despliegue Paso a Paso
+![Arquitectura de Red VPC y Aprovisionamiento EC2 en AWS](docs/architecture.svg)
 
-### 1. Infraestructura de Red (VPC)
+---
 
-- __Creación de VPC:__ Crear una VPC con bloque CIDR 10.0.0.0/16 (nombre: Startup-VPC).
-- __Gateway de Internet:__ Crear un Internet Gateway (Startup-IGW) y asociarlo a la VPC.
-- __Subred Pública:__ Crear una subred con el bloque CIDR 10.0.1.0/24 (nombre: Startup-
-Subnet-Publica).
-- __Tabla de Ruteo:__ Agregar una ruta en la Route Table local que apunte todo el tráfico saliente
-(0.0.0.0/0) hacia el Startup-IGW.
+## Decisiones Técnicas
 
-### 2. Seguridad (Security Group)
+- **VPC personalizada (`10.0.0.0/16`) en lugar de la Default VPC:** ofrece control explícito del direccionamiento CIDR, subredes (`10.0.1.0/24`) y tablas de ruteo (`0.0.0.0/0 -> Startup-IGW`), preparando la red para crecer hacia subredes privadas.
+- **Bootstrapping con EC2 User Data ([scripts/user-data.sh](scripts/user-data.sh)):** ejecuta `dnf update`, instala `httpd`, inicia el servicio y lo habilita con `systemctl enable httpd` para sobrevivir a reinicios sin intervención manual.
+- **Amazon Linux 2023 sobre `t2.micro` / `t3.micro`:** imagen mantenida por AWS con integración nativa de `systemd` y `dnf`, optimizada para pruebas bajo Free Tier.
 
+---
 
-- Crear un Grupo de Seguridad llamado Web-Server-SG asociado a Startup-VPC.
-- Configurar las siguientes reglas de entrada ( Inbound Rules ):
-  - __HTTP (Puerto 80):__ Desde cualquier origen (0.0.0.0/0).
-  - __SSH (Puerto 22):__ Para administración segura (se recomienda restringir a tu IP pública).
+## Seguridad e IAM
 
-### 3. Lanzamiento de Instancia EC2 & Bootstrapping
+Controles aplicados en el despliegue actual:
+- **Security Group stateful (`Web-Server-SG`):** permite tráfico entrante únicamente en `TCP 80` (`0.0.0.0/0`) para HTTP y `TCP 22` restringido a la IP pública del administrador.
+- **Segmentación de red:** recursos desplegados dentro de `Startup-VPC` con enrutamiento explícito solo para la subred pública.
 
+**Hardening previsto para producción:**
+- **Eliminar el puerto SSH 22 abierto** y administrar la instancia con **AWS Systems Manager (Session Manager)** mediante un IAM Role con `AmazonSSMManagedInstanceCore`.
+- **Mover la EC2 a una subred privada** (sin IP pública) y exponer la aplicación detrás de un **Application Load Balancer (ALB)** con HTTPS/TLS gestionado por **AWS Certificate Manager (ACM)**.
+- **Alta disponibilidad:** desplegar en al menos dos Zonas de Disponibilidad mediante **Auto Scaling Group** + **Launch Template**.
 
-Lanzar una instancia EC2 de tipo t2.micro (o t3.micro) con la AMI oficial de Amazon Linux
-2023.
-Vincularla a la Startup-Subnet-Publica y habilitar la autoasignación de IP pública.
-En la sección Advanced Details > User Data, ingresar el siguiente script de automatización:
+---
 
-```
-#!/bin/bash
-# Actualizar los paquetes del sistema
-dnf update -y
+## FinOps y Control de Costos
 
-# Instalar el servidor web Apache
-dnf install -y httpd
+- **VPC, Internet Gateway, Route Tables y Security Groups:** **$0.00 USD** (sin costo fijo).
+- **Amazon EC2 (`t2.micro` / `t3.micro`):** cubierto por las **750 horas/mes del AWS Free Tier** durante el primer año.
+- **Atención a IPv4 pública:** desde febrero de 2024 AWS cobra **$0.005 USD/hora (~$3.60 USD/mes)** por dirección IPv4 pública fuera de la asignación Free Tier; en laboratorios se recomienda **terminar la instancia** al finalizar las pruebas.
 
-# Iniciar el servicio del servidor web
-systemctl start httpd
+---
 
-# Habilitar el servidor para que inicie si la máquina se reinicia
-systemctl enable httpd
+## Guía de Despliegue y Evidencia
 
-# Crear una página web personalizada de prueba
-echo "<html><head><meta charset='UTF-8'></head><body style='font-family:sans-serif; text-align:center; padding-top:50px;'><h1>¡Despliegue automatizado exitoso!</h1><p>El equipo de la Startup ya no tiene que instalar ni configurar Apache manualmente.</p></body></html>" > /var/www/html/index.html
-```
-## 🧪 Pruebas y Validación
-
-
-1. Una vez que la instancia EC2 se encuentre en estado Running, copie su dirección IPv4 pública
-desde la consola de AWS.
-2. Abra una pestaña en su navegador e ingrese a http://<IP_PUBLICA>.
-3. Deberá ver la página web HTML generada automáticamente por el script Bash de User Data.
-
-## 📸 Evidencia de Configuración
+### Pasos resumidos
+1. Crear `Startup-VPC` (`10.0.0.0/16`), asociar `Startup-IGW`, crear `Startup-Subnet-Publica` (`10.0.1.0/24`) y agregar ruta `0.0.0.0/0 -> Startup-IGW` en la Route Table.
+2. Crear `Web-Server-SG` en `Startup-VPC` (Inbound: `TCP 80` desde `0.0.0.0/0` y `TCP 22` desde tu IP).
+3. Lanzar EC2 `t2.micro` / `t3.micro` (Amazon Linux 2023) en `Startup-Subnet-Publica` con IP pública y pegar el contenido de [scripts/user-data.sh](scripts/user-data.sh) en **Advanced Details > User Data**.
+4. Verificar respuesta en `http://<IP_PUBLICA>`.
 
 <details>
-  <summary>📸 Ver evidencia de configuración en consola (Clic para expandir)</summary>
+  <summary><b>Ver evidencia de configuración en consola AWS (6 capturas)</b></summary>
 
-  **1. Asociación de Internet Gateway (IGW):**
+  **1. Asociación de Internet Gateway (`Startup-IGW`):**
   ![Internet Gateway Attachment](docs/images/screenshots/01-igw-attachment.png)
 
-  **2. Creación y Configuración de la Subred Pública:**
+  **2. Creación de Subred Pública (`10.0.1.0/24`):**
   ![Public Subnet](docs/images/screenshots/02-public-subnet.png)
 
-  **3. Configuración y Rutas de la Route Table:**
+  **3. Reglas de la Route Table (`0.0.0.0/0 -> IGW`):**
   ![Route Table Rules](docs/images/screenshots/03-route-table-rules.2.png)
 
-  **4. Reglas de Entrada (Inbound Rules) del Security Group:**
+  **4. Reglas Inbound del Security Group (`Web-Server-SG`):**
   ![Security Group Inbound Rules](docs/images/screenshots/04-security-group-inbound.2.png)
 
-  **5. Instancia EC2 en Ejecución con IP Pública:**
+  **5. Instancia EC2 en ejecución con IP pública:**
   ![EC2 Running IP](docs/images/screenshots/05-ec2-running-ip.png)
 
-  **6. Confirmación de Servidor Apache Activo:**
+  **6. Servidor Apache activo tras User Data:**
   ![Apache Success](docs/images/screenshots/06-apache-deployment-success.png)
-
 </details>
 
-## 🚀 Habilidades Demostradas
+---
 
+## Estructura del Repositorio
 
-- __AWS Cloud Infrastructure:__ Uso de consola, VPC, direccionamiento CIDR, Internet Gateways y
-tablas de enrutamiento.
-- __Administración de Servidores Linux:__ Actualización de paquetería, gestión de servicios del
-sistema operativo (systemd) mediante Bash.
-- __Seguridad Cloud:__ Implementación de principios de mínimo privilegio mediante Security Groups
-y segmentación de red.
-- __Automatización / DevOps:__ Conceptos iniciales de aprovisionamiento ágil e infraestructura
-automatizada.
+```text
+aws-automated-web-server/
+├── docs/
+│   ├── architecture.svg       # Diagrama de arquitectura VPC y bootstrapping
+│   └── images/
+│       ├── architecture.png   # Diagrama original en Lucidchart
+│       └── screenshots/       # Capturas paso a paso en consola AWS
+├── scripts/
+│   └── user-data.sh           # Script Bash de aprovisionamiento Apache (AL2023)
+└── README.md
+```
 
-## 📚 Programa AWS re/Start & Generation Chile
+---
 
+## Autor
 
-re/Start dictado por Generation Chile, diseñado para adquirir habilidades técnicas clave en soporte,
-administración de sistemas y conceptos cloud de Amazon Web Services.
+**Víctor Martínez** — Junior Cloud Engineer | AWS, FinOps & Applied AI  
+AWS Certified Cloud Practitioner • AWS Cloud re/Start • En preparación para SAA-C03
 
-
+- **Portafolio:** [vitonez5198.github.io/Portfolio-VM](https://vitonez5198.github.io/Portfolio-VM/)
+- **LinkedIn:** [victor-ms-dev](https://www.linkedin.com/in/victor-ms-dev/)
+- **GitHub:** [@VitoNez5198](https://github.com/VitoNez5198)
