@@ -18,7 +18,13 @@ Configurar servidores web manualmente por SSH introduce errores repetitivos, der
 
 Topología de red y flujo de aprovisionamiento implementados en `Startup-VPC`:
 
-![Arquitectura de Red VPC y Aprovisionamiento EC2 en AWS](docs/architecture.svg)
+![Arquitectura de Red VPC y Aprovisionamiento EC2 en AWS](docs/architecture.png)
+
+### Flujo de Trabajo y Rol de cada Servicio
+
+1. **Entrada de tráfico (`Internet Gateway` + `Route Table`):** Las peticiones HTTP (`TCP 80`) del usuario ingresan a `Startup-VPC` (`10.0.0.0/16`) a través de `Startup-IGW`. La tabla de ruteo dirige el tráfico hacia internet (`0.0.0.0/0 → IGW`) para habilitar conectividad pública en la subred.
+2. **Segmentación y control perimetral (`Public Subnet` + `Security Group`):** La instancia se ubica en `Startup-Subnet-Publica` (`10.0.1.0/24`) protegida por `Web-Server-SG`, que solo habilita `TCP 80` público para tráfico web y `TCP 22` restringido a la IP de administración.
+3. **Cómputo y aprovisionamiento automático (`Amazon EC2` + `User Data`):** En el primer arranque de la instancia Amazon Linux 2023, el script Bash en [scripts/user-data.sh](scripts/user-data.sh) actualiza paquetes, instala y habilita Apache (`httpd`) y publica la página inicial sin intervención manual por SSH.
 
 ---
 
@@ -88,7 +94,8 @@ Controles aplicados en el despliegue actual:
 ```text
 aws-automated-web-server/
 ├── docs/
-│   ├── architecture.svg       # Diagrama de arquitectura VPC y bootstrapping
+│   ├── architecture.drawio    # Fuente editable del diagrama (Draw.io / AWS4)
+│   ├── architecture.png       # Diagrama de arquitectura VPC y bootstrapping
 │   └── images/
 │       ├── architecture.png   # Diagrama original en Lucidchart
 │       └── screenshots/       # Capturas paso a paso en consola AWS
